@@ -219,6 +219,12 @@ Frontend:
 
 ## Fase2. El tema
 
+![Evidencia 2a](./Evidencias/Evidencia2a.jpeg)
+
+![Evidencia 2b](./Evidencias/Evidencia2b.png)
+
+![Evidencia 2c](./Evidencias/Evidencia2c.png)
+
 ## Decisiones del reto
 
 <!-- Qué cambiaste, por qué y cómo comprobaste que funciona. -->

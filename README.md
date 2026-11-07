@@ -209,7 +209,15 @@ Frontend:
 
 ![Evidencia 0b](./Evidencias/Evidencia0b.png)
 
+## Fase 1. Registro, imágenes y la base
 
+![Evidencia 1a](./Evidencias/Evidencia1a.png)
+
+![Evidencia 1b](./Evidencias/Evidencia1b.jpeg)
+
+![Evidencia 1c](./Evidencias/Evidencia1c.png)
+
+## Fase2. El tema
 
 ## Decisiones del reto
 

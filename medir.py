@@ -11,9 +11,12 @@ Qué hace:
 
 Solo usa la biblioteca estándar de Python: no hay que instalar nada.
 """
+import functools
 import json
+import socket
 import sys
 import time
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -21,13 +24,27 @@ from datetime import datetime
 FINALES = {"listo", "rechazado"}
 PLAZO_MAXIMO = 600  # segundos; si pasa esto, se rinde y dice cuántos quedaron pendientes
 
+# El DNS de Cloud Shell a veces falla si muchos hilos preguntan a la vez por el
+# mismo nombre. Se resuelve una vez y se reutiliza la respuesta.
+_resolver = functools.lru_cache(maxsize=None)(socket.getaddrinfo)
+socket.getaddrinfo = lambda *a, **k: _resolver(*a, **k)
 
-def pedir(url, metodo="GET", cuerpo=None):
+
+def pedir(url, metodo="GET", cuerpo=None, intentos=5):
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
-    peticion = urllib.request.Request(url, data=datos, method=metodo,
-                                      headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(peticion, timeout=30) as respuesta:
-        return respuesta.status, json.loads(respuesta.read() or "null")
+    for intento in range(1, intentos + 1):
+        peticion = urllib.request.Request(url, data=datos, method=metodo,
+                                          headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(peticion, timeout=30) as respuesta:
+                return respuesta.status, json.loads(respuesta.read() or "null")
+        except urllib.error.HTTPError:
+            raise
+        except (urllib.error.URLError, OSError):
+            # Falla de red pasajera (DNS, conexión): se espera un poco y se repite.
+            if intento == intentos:
+                raise
+            time.sleep(intento)
 
 
 def fecha(texto):

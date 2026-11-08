@@ -327,6 +327,43 @@ Después del quinto intento, Pub/Sub dejó de reintentar y movió el mensaje al 
 
 En la captura, `DATA` es el id del pedido, `CloudPubSubDeadLetterSourceDeliveryCount=5` dice cuántas veces se intentó entregar y `CloudPubSubDeadLetterSourceSubscription=grupo8-cocina` dice de qué suscripción vino. El pedido queda en `preparando` en la pantalla, porque la cocina nunca lo terminó, pero ya no llena los registros con reintentos durante 7 días.
 
+#### Medir
+
+Usamos `medir.py` (en la raíz del repositorio). El script repone el inventario, lanza 60 pedidos de un tinto (20 a la vez), consulta cada pedido cada segundo y mide desde el primer pedido creado hasta el último terminado, con las horas que guarda Firestore. Cambiamos el máximo de instancias de la cocina con la variable `max_instancias_cocina` (`terraform apply -var max_instancias_cocina=N`) y repetimos 3 veces por configuración, con `PROBABILIDAD_FALLO` apagada.
+
+Comando: `python3 ../medir.py $(terraform output -raw url_backend) 60`
+
+| Máx. instancias | Medición 1 | Medición 2 | Medición 3 | Promedio | Teórico |
+|---|---|---|---|---|---|
+| 1 | 66.7 s | 49.1 s | 49.0 s | 54.9 s | 48 s |
+| 2 | 41.3 s | 40.2 s | 33.0 s | 38.2 s | 24 s |
+| 3 | 31.7 s | 28.0 s | 26.9 s | 28.9 s | 18 s |
+
+En todas las mediciones el backend aceptó los 60 pedidos en menos de 2 segundos, y siempre quedaron 20 listos y 40 rechazados (20 tintos en inventario).
+
+- 3 instancias
+
+![Evidencia 6g](./Evidencias/Evidencia6g.png)
+
+- 2 instancias
+
+![Evidencia 6h](./Evidencias/Evidencia6h.png)
+
+- 1 instancia
+
+![Evidencia 6i](./Evidencias/Evidencia6i.png)
+
+**Lecturas y escrituras de Firestore por pedido** (1 producto, sin repeticiones), contadas en el código:
+
+| Quién | Lecturas | Escrituras |
+|---|---|---|
+| Backend, `POST /pedidos` (contador y pedido) | 0 | 2 |
+| Cocina, al llegar (lee el pedido, lo marca `preparando`) | 1 | 1 |
+| Cocina, transacción (pedido e inventario; descuento y `listo`) | 2 | 2 |
+| **Total** | **3** | **5** |
+
+Una entrega repetida suma 1 lectura. Cada repetición de una transacción por choque suma 2 lecturas. Un pedido rechazado cuesta 4 escrituras en vez de 5. Además, la pantalla de la cafetería lee hasta 20 pedidos cada 5 segundos mientras esté abierta, y el teléfono lee su pedido cada 5 segundos.
+
 
 ## Decisiones del reto
 

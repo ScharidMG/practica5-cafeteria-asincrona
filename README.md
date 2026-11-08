@@ -313,6 +313,8 @@ El inventario pasó de 20 a 16: exactamente 4 tintos por 4 pedidos.
 | Pedidos en rechazado | __ | 40 |
 | Tinto al final | __ (negativo) | 0 |
 
+#### Mensajes muertos
+
 
 ## Decisiones del reto
 

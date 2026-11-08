@@ -100,6 +100,11 @@ resource "google_pubsub_subscription" "cocina" {
     maximum_backoff = "60s"
   }
 
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.muertos.id
+    max_delivery_attempts = 5
+  }
+
   push_config {
     push_endpoint = google_cloud_run_v2_service.cocina.uri
 
@@ -113,4 +118,33 @@ resource "google_pubsub_subscription" "cocina" {
     google_cloud_run_v2_service_iam_member.invocador_cocina,
     google_service_account_iam_member.pubsub_firma_tokens,
   ]
+}
+
+# ---------- Mensajes muertos ----------
+
+resource "google_pubsub_topic" "muertos" {
+  name = "${var.prefijo}-muertos"
+
+  depends_on = [google_project_service.apis]
+}
+
+# Sin esta suscripción, lo que llegue al tema de muertos se pierde.
+resource "google_pubsub_subscription" "muertos" {
+  name  = "${var.prefijo}-muertos"
+  topic = google_pubsub_topic.muertos.id
+}
+
+# El agente de Pub/Sub publica en el tema de muertos los mensajes que se rinden.
+resource "google_pubsub_topic_iam_member" "agente_publica_muertos" {
+  topic  = google_pubsub_topic.muertos.name
+  role   = "roles/pubsub.publisher"
+  member = local.agente_pubsub
+}
+
+# El agente de Pub/Sub confirma el mensaje en la suscripción de la cocina
+# después de moverlo, para que no siga ahí.
+resource "google_pubsub_subscription_iam_member" "agente_suscribe_cocina" {
+  subscription = google_pubsub_subscription.cocina.name
+  role         = "roles/pubsub.subscriber"
+  member       = local.agente_pubsub
 }

@@ -247,6 +247,36 @@ Frontend:
 
 ![Evidencia 4e](./Evidencias/Evidencia4e.png)
 
+## Fase5. Una falla a propósito
+
+Hicimos 4 pedidos de 1 tinto con `PROBABILIDAD_FALLO = 0.5`, partiendo de 20 tintos.
+
+**Inventario después de los 4 pedidos:** quedaron 11 tintos.
+Si cada pedido descontara una sola vez, deberían quedar 16.
+
+![Evidencia 5a](./Evidencias/Evidencia5a.jpeg)
+
+**Registros de la cocina:** cada pedido se procesó más de una vez.
+
+![Evidencia 5b](./Evidencias/Evidencia5b.png)
+
+**El pedido XLTl40uOYqa5199Gy2r7 se preparó 3 veces:**
+
+![Evidencia 5c](./Evidencias/Evidencia5c.png)
+
+**La cuenta:**
+
+| Pedido | Veces preparado |
+|---|---|
+| XLTl40uOYqa5199Gy2r7 | 3 |
+| LFdMIJZ03W65kfbKQW7n | 2 |
+| 1KrEUX8dbemLboqeSvZH | 2 |
+| dwKWFlrnxJquH6nqCFlD | 2 |
+| **Total** | **9 tintos descontados por 4 pedidos** |
+
+La cocina terminaba el pedido y descontaba el inventario, pero respondía 500 antes de confirmar.
+Pub/Sub no recibió el 2xx y volvió a entregar el mensaje, así que la cocina lo preparó de nuevo.
+Esto muestra que Pub/Sub entrega **al menos una vez**, no **exactamente una vez**.
 
 ## Decisiones del reto
 

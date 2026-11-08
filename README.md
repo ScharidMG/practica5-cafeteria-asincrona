@@ -315,6 +315,18 @@ El inventario pasó de 20 a 16: exactamente 4 tintos por 4 pedidos.
 
 #### Mensajes muertos
 
+Agregamos a `infra/pubsub.tf` un tema `grupo8-muertos`, su suscripción `grupo8-muertos` y una `dead_letter_policy` en la suscripción de la cocina con `max_delivery_attempts = 5`. El agente de Pub/Sub recibió `roles/pubsub.publisher` sobre el tema de muertos y `roles/pubsub.subscriber` sobre la suscripción de la cocina.
+
+Pedimos un plato misterioso (pedido `rOtemV4O3m0fT06aPxto`). Ahora la cocina sí muestra el número de intento, porque `deliveryAttempt` solo llega cuando la suscripción tiene política de mensajes muertos. Se ven los intentos 1 a 5 y ninguno más:
+
+![Evidencia 6e](./Evidencias/Evidencia6e.png)
+
+Después del quinto intento, Pub/Sub dejó de reintentar y movió el mensaje al tema de muertos. Lo leímos desde la suscripción `grupo8-muertos` con `gcloud pubsub subscriptions pull grupo8-muertos --limit=5`:
+
+![Evidencia 6f](./Evidencias/Evidencia6f.png)
+
+En la captura, `DATA` es el id del pedido, `CloudPubSubDeadLetterSourceDeliveryCount=5` dice cuántas veces se intentó entregar y `CloudPubSubDeadLetterSourceSubscription=grupo8-cocina` dice de qué suscripción vino. El pedido queda en `preparando` en la pantalla, porque la cocina nunca lo terminó, pero ya no llena los registros con reintentos durante 7 días.
+
 
 ## Decisiones del reto
 

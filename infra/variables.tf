@@ -36,3 +36,9 @@ variable "imagen_cocina" {
   description = "Imagen de la cocina en Artifact Registry, con su etiqueta"
   type        = string
 }
+
+variable "max_instancias_cocina" {
+  description = "Máximo de instancias de la cocina en Cloud Run"
+  type        = number
+  default     = 3
+}

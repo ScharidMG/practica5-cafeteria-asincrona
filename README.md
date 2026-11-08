@@ -278,6 +278,42 @@ La cocina terminaba el pedido y descontaba el inventario, pero respondía 500 an
 Pub/Sub no recibió el 2xx y volvió a entregar el mensaje, así que la cocina lo preparó de nuevo.
 Esto muestra que Pub/Sub entrega **al menos una vez**, no **exactamente una vez**.
 
+## Fase6. Reto de la semana: que cuadre
+
+#### Idempotencia
+
+Cambiamos `cocina/main.py` (imagen `cocina:v2`) y dejamos `PROBABILIDAD_FALLO = 0.5` para comprobar que el inventario cuadra aunque los pedidos lleguen repetidos.
+
+**Prueba A: 4 pedidos de 1 tinto con la falla inyectada**
+
+En los registros, 3 de los 4 pedidos fallaron después de quedar listos y Pub/Sub los volvió a entregar. En la segunda entrega, la cocina vio que ya estaban en `listo` y no los preparó otra vez:
+
+![Evidencia 6a](./Evidencias/Evidencia6a.png)
+
+El inventario pasó de 20 a 16: exactamente 4 tintos por 4 pedidos.
+
+![Evidencia 6b](./Evidencias/Evidencia6b.jpeg)
+
+| | Cocina de la plantilla (fase 5) | Cocina idempotente (fase 6) |
+|---|---|---|
+| Pedidos | 4 | 4 |
+| Entregas repetidas | 5 | 3 |
+| Tintos descontados | 9 | 4 |
+| Inventario final | 11 | 16 |
+
+**Prueba B: ráfaga de 60 pedidos con 20 tintos**
+
+![Evidencia 6c](./Evidencias/Evidencia6c.png)
+
+![Evidencia 6d](./Evidencias/Evidencia6d.jpeg)
+
+| | Fase 4 (plantilla) | Fase 6 (idempotente) |
+|---|---|---|
+| Pedidos en listo | __ | 20 |
+| Pedidos en rechazado | __ | 40 |
+| Tinto al final | __ (negativo) | 0 |
+
+
 ## Decisiones del reto
 
 <!-- Qué cambiaste, por qué y cómo comprobaste que funciona. -->

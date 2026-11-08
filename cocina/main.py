@@ -53,6 +53,13 @@ def recibir():
         log.warning("El pedido %s no existe; se descarta el mensaje", pedido_id)
         return "", 204
 
+    # Idempotencia, primer filtro: si el pedido ya terminó, esta entrega es
+    # repetida. Se confirma con 204 sin volver a prepararlo.
+    if pedido.get("estado") in ("listo", "rechazado"):
+        log.info("Pedido %s ya estaba %s; entrega repetida, no se prepara otra vez",
+                 pedido_id, pedido.get("estado"))
+        return "", 204
+
     pedido_ref.update({"estado": "preparando", "actualizado": ahora()})
 
     cantidades = Counter()
@@ -64,25 +71,17 @@ def recibir():
 
     time.sleep(TIEMPO_PREPARACION)
 
-    inventario = db().collection("inventario")
-    faltan = [
-        producto for producto, cantidad in cantidades.items()
-        if (inventario.document(producto).get().get("existencias") or 0) < cantidad
-    ]
-    if faltan:
-        pedido_ref.update({
-            "estado": "rechazado",
-            "motivo": "Se acabó: " + ", ".join(faltan),
-            "actualizado": ahora(),
-        })
+    # Idempotencia, segundo filtro: revisar el estado, revisar las existencias
+    # y descontar van en UNA sola transacción. Si dos entregas del mismo pedido
+    # llegan a la vez, Firestore no deja que las dos terminen con los mismos
+    # datos: una gana y la otra se repite, ve el pedido en "listo" y no descuenta.
+    resultado, faltan = cerrar_pedido(db().transaction(), pedido_ref, cantidades)
+
+    if resultado == "repetido":
+        log.info("Pedido %s lo terminó otra entrega; no se descuenta otra vez", pedido_id)
+    elif resultado == "rechazado":
         log.info("Pedido %s rechazado, no alcanza: %s", pedido_id, faltan)
     else:
-        # Ojo: si Pub/Sub entrega este mismo pedido otra vez, este descuento se repite.
-        lote = db().batch()
-        for producto, cantidad in cantidades.items():
-            lote.update(inventario.document(producto), {"existencias": firestore.Increment(-cantidad)})
-        lote.update(pedido_ref, {"estado": "listo", "actualizado": ahora()})
-        lote.commit()
         log.info("Pedido %s listo", pedido_id)
 
     # Simula que la cocina se cae justo después de terminar y antes de confirmar.
@@ -92,3 +91,32 @@ def recibir():
         return "falla simulada", 500
 
     return "", 204
+
+
+@firestore.transactional
+def cerrar_pedido(transaccion, pedido_ref, cantidades):
+    # En una transacción de Firestore, primero se lee todo y después se escribe.
+    pedido = pedido_ref.get(transaction=transaccion)
+    if pedido.get("estado") in ("listo", "rechazado"):
+        return "repetido", []
+
+    inventario = db().collection("inventario")
+    existencias = {}
+    for producto in cantidades:
+        doc = inventario.document(producto).get(transaction=transaccion)
+        existencias[producto] = (doc.get("existencias") if doc.exists else 0) or 0
+
+    faltan = [p for p, c in cantidades.items() if existencias[p] < c]
+    if faltan:
+        transaccion.update(pedido_ref, {
+            "estado": "rechazado",
+            "motivo": "Se acabó: " + ", ".join(faltan),
+            "actualizado": ahora(),
+        })
+        return "rechazado", faltan
+
+    for producto, cantidad in cantidades.items():
+        transaccion.update(inventario.document(producto),
+                           {"existencias": existencias[producto] - cantidad})
+    transaccion.update(pedido_ref, {"estado": "listo", "actualizado": ahora()})
+    return "listo", []

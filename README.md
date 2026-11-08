@@ -225,6 +225,29 @@ Frontend:
 
 ![Evidencia 2c](./Evidencias/Evidencia2c.png)
 
+## Fase3. La cocina privada
+
+![Evidencia 3a](./Evidencias/Evidencia3a.jpeg)
+
+![Evidencia 3b](./Evidencias/Evidencia3b.png)
+
+![Evidencia 3c](./Evidencias/Evidencia3c.png)
+
+![Evidencia 3d](./Evidencias/Evidencia3d.png)
+
+## Fase4. Lo asíncrono, visto
+
+![Evidencia 4a](./Evidencias/Evidencia4a.png)
+
+![Evidencia 4b](./Evidencias/Evidencia4b.jpeg)
+
+![Evidencia 4c](./Evidencias/Evidencia4c.jpeg)
+
+![Evidencia 4d](./Evidencias/Evidencia4d.png)
+
+![Evidencia 4e](./Evidencias/Evidencia4e.png)
+
+
 ## Decisiones del reto
 
 <!-- Qué cambiaste, por qué y cómo comprobaste que funciona. -->

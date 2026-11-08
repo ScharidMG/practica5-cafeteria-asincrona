@@ -364,6 +364,12 @@ En todas las mediciones el backend aceptó los 60 pedidos en menos de 2 segundos
 
 Una entrega repetida suma 1 lectura. Cada repetición de una transacción por choque suma 2 lecturas. Un pedido rechazado cuesta 4 escrituras en vez de 5. Además, la pantalla de la cafetería lee hasta 20 pedidos cada 5 segundos mientras esté abierta, y el teléfono lee su pedido cada 5 segundos.
 
+## Reproducir
+
+![Evidencia 6j](./Evidencias/Evidencia6j.png)
+
+![Evidencia 6k](./Evidencias/Evidencia6k.png)
+
 
 ## Decisiones del reto
 
